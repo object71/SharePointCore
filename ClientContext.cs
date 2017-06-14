@@ -10,27 +10,41 @@ using Object71.SharePointCore.Authentication;
 namespace Object71.SharePointCore {
 
 	public class ClientContext {
-		protected HttpClientHandler handler;
-		internal HttpMessageInvoker httpSender;
+		protected HttpClientHandler Handler { get; set; }
+		internal HttpMessageInvoker HttpSender { get; set; }
+		private readonly Uri sharePointUri;
+		public Uri SharePointUri { get; }
 
-		internal ClientContext() {
+		public ClientContext(string url) {
 
+			this.sharePointUri = new Uri(url);
+			this.InitHttp();
+
+		}
+
+		public ClientContext(Uri uri) {
+
+			this.sharePointUri = uri;
 			this.InitHttp();
 
 		}
 
 		internal void AddCookie(string endpoint, string name, string value) {
-			this.handler.CookieContainer.Add(new Uri(endpoint), new Cookie(name, value));
+			this.Handler.CookieContainer.Add(new Uri(endpoint), new Cookie(name, value));
 		}
 
 		private void InitHttp() {
 
-			handler = new HttpClientHandler();
-			handler.UseCookies = true;
-			handler.CookieContainer = new CookieContainer();
-			handler.AllowAutoRedirect = false;
+			Handler = new HttpClientHandler();
+			Handler.UseCookies = true;
+			Handler.CookieContainer = new CookieContainer();
+			Handler.AllowAutoRedirect = false;
 
-			httpSender = new HttpMessageInvoker(handler);
+			HttpSender = new HttpMessageInvoker(Handler);
+		}
+
+		public void Authenticate(string username, string password) {
+			UserAuthentication.Authenticate(context, username, password);
 		}
 
 		public HttpResponseMessage RawGetRequest(string url) {
@@ -38,7 +52,7 @@ namespace Object71.SharePointCore {
 			HttpRequestMessage request = new HttpRequestMessage();
 			request.RequestUri = new Uri(url);
 			request.Method = HttpMethod.Get;
-			Task<HttpResponseMessage> promise = this.httpSender.SendAsync(request, new CancellationToken());
+			Task<HttpResponseMessage> promise = this.HttpSender.SendAsync(request, new CancellationToken());
 			promise.Wait();
 
 			return promise.Result;
@@ -57,7 +71,7 @@ namespace Object71.SharePointCore {
 			request.Content.Headers.Add("Content-Type", "application/xml");
 			request.Content.Headers.Add("Content-Length", requestData.Length.ToString());
 			
-			Task<HttpResponseMessage> promise = this.httpSender.SendAsync(request, new CancellationToken());
+			Task<HttpResponseMessage> promise = this.HttpSender.SendAsync(request, new CancellationToken());
 			promise.Wait();
 
 			return promise.Result;
