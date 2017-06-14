@@ -6,13 +6,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Object71.SharePointCore.Authentication;
+using Object71.SharePointCore.Communication;
 
 namespace Object71.SharePointCore {
 
 	public class ClientContext {
-		protected HttpClientHandler Handler { get; set; }
+		internal HttpClientHandler Handler { get; set; }
 		internal HttpMessageInvoker HttpSender { get; set; }
+		protected SharePointCommunicator Communicator { get; set; }
 		private readonly Uri sharePointUri;
+
 		public Uri SharePointUri { get; }
 
 		public ClientContext(string url) {
@@ -35,27 +38,29 @@ namespace Object71.SharePointCore {
 
 		private void InitHttp() {
 
-			Handler = new HttpClientHandler();
-			Handler.UseCookies = true;
-			Handler.CookieContainer = new CookieContainer();
-			Handler.AllowAutoRedirect = false;
+			this.Handler = new HttpClientHandler();
+			this.Handler.UseCookies = true;
+			this.Handler.CookieContainer = new CookieContainer();
+			this.Handler.AllowAutoRedirect = false;
 
-			HttpSender = new HttpMessageInvoker(Handler);
+			this.HttpSender = new HttpMessageInvoker(Handler);
+
+			this.Communicator = new SharePointCommunicator(this.HttpSender);
+
 		}
 
 		public void Authenticate(string username, string password) {
-			UserAuthentication.Authenticate(context, username, password);
+			UserAuthentication.Authenticate(this, username, password).Wait();
 		}
 
 		public HttpResponseMessage RawGetRequest(string url) {
 
-			HttpRequestMessage request = new HttpRequestMessage();
-			request.RequestUri = new Uri(url);
-			request.Method = HttpMethod.Get;
-			Task<HttpResponseMessage> promise = this.HttpSender.SendAsync(request, new CancellationToken());
-			promise.Wait();
+			HttpResponseMessage response = Communicator.Ajax(new RequestOptions {
+				Method = HttpMethod.Get,
+				Url = new Uri(url),
+			});
 
-			return promise.Result;
+			return response;
 
 		}
 
