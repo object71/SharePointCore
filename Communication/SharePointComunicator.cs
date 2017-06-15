@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Object71.SharePointCore.Common;
 
 namespace Object71.SharePointCore.Communication {
 
@@ -39,10 +40,9 @@ namespace Object71.SharePointCore.Communication {
 				request.Headers.Add(header.Key, header.Value);
 			}
 			
-			Task<HttpResponseMessage> promise = agent.SendAsync(request, new CancellationToken());
-			promise.Wait();
+			HttpResponseMessage result = agent.SendAsync(request, new CancellationToken()).Sync();
 
-			return promise.Result;
+			return result;
 
 		}
 	}

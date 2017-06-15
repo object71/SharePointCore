@@ -42,9 +42,7 @@ namespace Object71.SharePointCore.Authentication {
 
 			// TODO: Implement logic for federation authentication.
 
-			Task<string> readOperation = result.Content.ReadAsStringAsync();
-			readOperation.Wait();
-			string message = readOperation.Result;
+			string message = result.Content.ReadAsStringAsync().Sync();
 
 			Regex binaryTokenMatcher = new Regex(@"<([a-zA-Z]*:)?BinarySecurityToken.*>(.*)<\/([a-zA-Z]*:)?BinarySecurityToken>");
 			
