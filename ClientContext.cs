@@ -10,10 +10,10 @@ using Object71.SharePointCore.Communication;
 
 namespace Object71.SharePointCore {
 
-	public class ClientContext {
+	public sealed class ClientContext {
 		internal HttpClientHandler Handler { get; set; }
 		internal HttpMessageInvoker HttpSender { get; set; }
-		protected SharePointCommunicator Communicator { get; set; }
+		internal SharePointCommunicator Communicator { get; set; }
 		private readonly Uri sharePointUri;
 
 		public Uri SharePointUri { get; }
@@ -50,7 +50,11 @@ namespace Object71.SharePointCore {
 		}
 
 		public void Authenticate(string username, string password) {
-			UserAuthentication.Authenticate(this, username, password).Wait();
+
+			UserAuthentication.Authenticate(this, username, password);
+
+			// TODO: Get contextinfo header to be added with each request
+
 		}
 
 		public HttpResponseMessage RawGetRequest(string url) {
@@ -64,22 +68,16 @@ namespace Object71.SharePointCore {
 
 		}
 
-		public HttpResponseMessage RawPostRequest(string url, string content = "") {
+		public HttpResponseMessage RawPostRequest(string url, string content = "", string contentType = null) {
 
-			byte[] requestData = Encoding.ASCII.GetBytes(content);
+			HttpResponseMessage response = Communicator.Ajax(new RequestOptions {
+				Method = HttpMethod.Post,
+				Url = new Uri(url),
+				Data = content,
+				ContentType = contentType,
+			});
 
-			HttpRequestMessage request = new HttpRequestMessage();
-			request.RequestUri = new Uri(url);
-			request.Method = HttpMethod.Post;
-			
-			request.Content = new ByteArrayContent(requestData);
-			request.Content.Headers.Add("Content-Type", "application/xml");
-			request.Content.Headers.Add("Content-Length", requestData.Length.ToString());
-			
-			Task<HttpResponseMessage> promise = this.HttpSender.SendAsync(request, new CancellationToken());
-			promise.Wait();
-
-			return promise.Result;
+			return response;
 
 		}
 

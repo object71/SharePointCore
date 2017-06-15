@@ -7,19 +7,19 @@ using System.Threading.Tasks;
 
 namespace Object71.SharePointCore.Communication {
 
-	public class SharePointCommunicator {
+	internal class SharePointCommunicator {
 
 		private HttpMessageInvoker agent;
 
-		public SharePointCommunicator(HttpMessageInvoker agent) {
+		internal SharePointCommunicator(HttpMessageInvoker agent) {
 			this.agent = agent;
 		}
 
-		public SharePointCommunicator(HttpClientHandler handler) {
+		internal SharePointCommunicator(HttpClientHandler handler) {
 			this.agent = new HttpMessageInvoker(handler);
 		}
 
-		public HttpResponseMessage Ajax(RequestOptions options) {
+		internal HttpResponseMessage Ajax(RequestOptions options) {
 
 			HttpRequestMessage request = new HttpRequestMessage();
 

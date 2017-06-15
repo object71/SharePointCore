@@ -9,39 +9,42 @@ using Object71.SharePointCore;
 using Object71.SharePointCore.Common;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using Object71.SharePointCore.Communication;
 
 namespace Object71.SharePointCore.Authentication {
 
 	public class UserAuthentication {
 
-		internal static async Task Authenticate(ClientContext context, string username, string password) {
+		internal static void Authenticate(ClientContext context, string username, string password) {
 			
-			string securityToken = await UserAuthentication.GetSecurityToken(context, username, password);
-			await UserAuthentication.GetAccessToken(context, securityToken);
+			string securityToken = UserAuthentication.GetSecurityToken(context, username, password);
+			UserAuthentication.GetAccessToken(context, securityToken);
 			
 		}
 
-		private static async Task<string> GetSecurityToken(ClientContext context, string username, string password) {
+		private static string GetSecurityToken(ClientContext context, string username, string password) {
 
 			string envelope = FormatEnvelope(username, password, context.SharePointUri.AbsoluteUri);
 
-			return await UserAuthentication.GetSecurityToken(context, envelope, context.SharePointUri.AbsoluteUri);
+			return UserAuthentication.GetSecurityToken(context, envelope);
 		}
 
-		private static async Task<string> GetSecurityToken(ClientContext context, string envelope) {
+		private static string GetSecurityToken(ClientContext context, string envelope) {
 
-			byte[] requestData = Encoding.ASCII.GetBytes(envelope);
 			
-			HttpRequestMessage request = new HttpRequestMessage();
-			request.RequestUri = new Uri(Constants.LoginUrl);
-			request.Method = HttpMethod.Post;
-			request.Content = new ByteArrayContent(requestData);
-			request.Content.Headers.Add("Content-Type", "application/xml");
-			request.Content.Headers.Add("Content-Length", requestData.Length.ToString());
 			
-			HttpResponseMessage result = await context.HttpSender.SendAsync(request, new CancellationToken());
+			HttpResponseMessage result = context.Communicator.Ajax(new RequestOptions {
+				Url = new Uri(Constants.LoginUrl),
+				Method = HttpMethod.Post,
+				Data = envelope,
+				ContentType = "application/xml",
+			});
 
-			string message = await result.Content.ReadAsStringAsync();
+			// TODO: Implement logic for federation authentication.
+
+			Task<string> readOperation = result.Content.ReadAsStringAsync();
+			readOperation.Wait();
+			string message = readOperation.Result;
 
 			Regex binaryTokenMatcher = new Regex(@"<([a-zA-Z]*:)?BinarySecurityToken.*>(.*)<\/([a-zA-Z]*:)?BinarySecurityToken>");
 			
@@ -50,18 +53,14 @@ namespace Object71.SharePointCore.Authentication {
 			return binaryToken;
 		}
 
-		private static async Task GetAccessToken(ClientContext context, string securityToken) {
+		private static void GetAccessToken(ClientContext context, string securityToken) {
 
-			byte[] requestData = Encoding.ASCII.GetBytes(securityToken);
-			
-			HttpRequestMessage request = new HttpRequestMessage();
-			request.RequestUri = new Uri("https://" + context.SharePointUri.Host + "/_forms/default.aspx?wa=wsignin1.0");
-			request.Method = HttpMethod.Post;
-			request.Content = new ByteArrayContent(requestData);
-			request.Content.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
-			request.Content.Headers.Add("Content-Length", requestData.Length.ToString());
-			
-			HttpResponseMessage result = await context.HttpSender.SendAsync(request, new CancellationToken());
+			HttpResponseMessage result = context.Communicator.Ajax(new RequestOptions {
+				Url = new Uri("https://" + context.SharePointUri.Host + "/_forms/default.aspx?wa=wsignin1.0"),
+				Method = HttpMethod.Post,
+				Data = securityToken,
+				ContentType = "application/x-www-form-urlencoded",
+			});
 
 		}
 
