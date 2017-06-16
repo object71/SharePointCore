@@ -62,6 +62,24 @@ namespace Object71.SharePointCore.Authentication {
 
 		}
 
+		internal static string GetRequestDigest(ClientContext context) {
+
+			HttpResponseMessage result = context.Communicator.Ajax(new RequestOptions {
+				Url = new Uri("https://" + context.SharePointUri.Host + "/_api/contextinfo"),
+				Method = HttpMethod.Post,
+				Data = "",
+			});
+
+			string message = result.Content.ReadAsStringAsync().Sync();
+
+			Regex formDigestValueMatcher = new Regex(@"<([a-zA-Z]*:)?FormDigestValue.*>(.*)<\/([a-zA-Z]*:)?FormDigestValue>");
+			
+			string requestDigest = formDigestValueMatcher.Match(message).Groups[2].Value;
+
+			return requestDigest;
+
+		}
+
 		private static string FormatEnvelope(string username, string password, string endpoint) {
 			
 			string envelope = Envelopes.TokenEnvelope;
@@ -70,6 +88,7 @@ namespace Object71.SharePointCore.Authentication {
 			envelope = envelope.Replace("{{endpoint}}", WebUtility.HtmlEncode(endpoint));
 
 			return envelope;
+
 		}
 	}
 

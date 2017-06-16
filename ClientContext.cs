@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -14,6 +15,7 @@ namespace Object71.SharePointCore {
 		internal HttpClientHandler Handler { get; set; }
 		internal HttpMessageInvoker HttpSender { get; set; }
 		internal SharePointCommunicator Communicator { get; set; }
+		internal string RequestDigest;
 		private readonly Uri sharePointUri;
 
 		public Uri SharePointUri { get; }
@@ -53,7 +55,7 @@ namespace Object71.SharePointCore {
 
 			UserAuthentication.Authenticate(this, username, password);
 
-			// TODO: Get contextinfo header to be added with each request
+			this.RequestDigest = UserAuthentication.GetRequestDigest(this);
 
 		}
 
@@ -61,6 +63,7 @@ namespace Object71.SharePointCore {
 
 			HttpResponseMessage response = Communicator.Ajax(new RequestOptions {
 				Method = HttpMethod.Get,
+				Headers = new KeyValuePair<string, string>[] { new KeyValuePair<string, string>("X-RequestDigest", this.RequestDigest) },
 				Url = new Uri(url),
 			});
 
@@ -72,11 +75,12 @@ namespace Object71.SharePointCore {
 
 			HttpResponseMessage response = Communicator.Ajax(new RequestOptions {
 				Method = HttpMethod.Post,
+				Headers = new KeyValuePair<string, string>[] { new KeyValuePair<string, string>("X-RequestDigest", this.RequestDigest) },
 				Url = new Uri(url),
 				Data = content,
 				ContentType = contentType,
 			});
-
+			
 			return response;
 
 		}
