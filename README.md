@@ -1,6 +1,8 @@
 # SharePointCore
 Open source SharePoint REST API built on C# and .NET Core
 
+KEEPING THIS FOR REFERENCE. I DON'T PLAN ON UPGRADING THIS.
+
 # Tasks
 
 ## Base
